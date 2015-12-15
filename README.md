@@ -11,7 +11,8 @@ Pricinciple of Operation
 Reviewing large and long running pull requests can be painful. git-review helps that process by:
 
   - Keeping track of the pull request in a local branch, by default called `pr/1234` for a pull request #1234.
-  - Keeping track of what changes you have reviewed in a *review branch*, by default called `review/1234`.
+  - Keeping track of what changes you have reviewed in a *review branch*, by default called `pr/1234-review`.
+  - Keeping track of the latest reviewed PR version (in the face of rebases and so on), by default in a branch called `pr/1234-done`. (It's called that because we update it when the "Done" command is used.)
   - Stepping through each change in the pull request and presenting options to add, skip and so on.
 
 The end result is that the `review/1234` branch contains the code that you have
@@ -73,6 +74,18 @@ There are some further commands:
   - `git review unreview 1234` - remove the pull request and review branches for this pull request.
   - `git review done` - create the review commit, if you have continued review outside of git-review for example.
   - `git review` (without a pull request number) - continue reviewing, assuming you are on a review branch.
+
+Recovering from Rebases
+-----------------------
+
+When a pull request has been updated, there are two possible ways to slice it when continuing the review. Once way is to compare against the code at the state of the last review; this is what git-review does by default, and it's also what you want when the pull request *hasn't* changed but you didn't review all changes the first time.
+
+However if there have been changes to master and these have been incorporated in the pull request by merging or rebasing, you'll get to review these too. That may not be a problem if these changes are small and obvious. In other cases it may be unworkable; in that case we have options;
+
+ - Just look again at the full pull request (this is what you'll get to do on GitHub by default anyway)
+ - Try to merge the new pull request merge base into the review branch (I'm starting to sound like the Git manual here... yikes!) and then continue the review.
+
+*XXX This needs handling and support*
 
 License
 -------

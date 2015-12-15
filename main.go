@@ -18,7 +18,6 @@ var (
 	pager         = getConfigDefault("review.pager", os.Getenv("PAGER"))
 	pullPattern   = getConfigDefault("review.pullBranch", "pr/%s")
 	remote        = getConfigDefault("review.remote", "origin")
-	revPattern    = getConfigDefault("review.revBranch", "review/%s")
 	verbose       = os.Getenv("RTDEBUG") != ""
 )
 
@@ -44,8 +43,8 @@ func main() {
 
 	default:
 		num := flag.Arg(0)
-		revBranch := fmt.Sprintf(revPattern, num)
 		pullBranch := fmt.Sprintf(pullPattern, num)
+		revBranch := pullBranch + "-review"
 		mustCmd("git", "fetch", "-u", "-f", remote, "refs/pull/"+num+"/head:"+pullBranch)
 
 		if _, err := cmd("git", "rev-parse", "--verify", revBranch); err != nil {
@@ -174,6 +173,12 @@ func diff(c change) {
 // done creates a commit with the currently staged files, with a description
 // of how much has been reviewed
 func done() {
+	reviewBranch := strings.TrimSpace(mustCmd("git", "rev-parse", "--abbrev-ref", "HEAD"))
+	pullBranch := strings.Replace(reviewBranch, "-review", "", 1)
+	doneBranch := pullBranch + "-done"
+	cmd("git", "branch", "-D", doneBranch) // may fail when the branch doesn't exist, we don't care
+	mustCmd("git", "branch", doneBranch, pullBranch)
+
 	changes := allChanges()
 	if len(changes) == 0 {
 		return
@@ -272,6 +277,8 @@ func updated() {
 // unreview removes the remove and pull request branches for a given pull
 // request
 func unreview(pr string) {
-	mustCmd("git", "branch", "-D", fmt.Sprintf(pullPattern, pr))
-	mustCmd("git", "branch", "-D", fmt.Sprintf(revPattern, pr))
+	pullBranch := fmt.Sprintf(pullPattern, pr)
+	mustCmd("git", "branch", "-D", pullBranch)
+	mustCmd("git", "branch", "-D", pullBranch+"-review")
+	mustCmd("git", "branch", "-D", pullBranch+"-done")
 }
